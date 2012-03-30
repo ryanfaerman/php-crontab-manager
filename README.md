@@ -8,9 +8,9 @@ crontab file to the target.
 Installation
 ------------
 
-# copy files to your project
-# include files from src directory or use some autoloader
-# use it!
+ # copy files to your project
+ # include files from src directory or use some autoloader
+ # use it!
 
 Usage
 -----

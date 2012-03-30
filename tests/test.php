@@ -1,31 +1,40 @@
 <?php
 /**
- * LivePlatform
+ * @author                                                      Krzysztof Suszyński <k.suszynski@mediovski.pl>
+ * @version                                                     0.2
+ * @package                                                     php.manager.crontab
  *
- * Copyrighted by Mediovski sp. z o.o.
+ * Copyright (c) 2012 Krzysztof Suszyński <k.suszynski@mediovski.pl>
  *
- * The code contained in this file is property or copyrighted by
- * Mediovski sp. z o.o. If you are not employee of this company or one of our
- * clients, please delete this file and inform us as soon as possible by
- * email: info@mediovski.pl. This file may not be disclosed, used or copied
- * by anyone other than authorized people mentioned before. If you wish
- * clarification of any matter, please request it by email.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * @author Krzysztof Suszynski <k.suszynski@mediovski.pl>
- * @copyright Copyright (c) 2012, Mediovski sp. z o.o.
- * @package pl.mediovski.technology
- * @version SVN: $Id: $
- * @filesource
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
  */
 
 use php\manager\crontab\CrontabManager;
-
-ini_set('display_errors', 'On');
-error_reporting(E_ALL);
 
 require '../src/CronEntry.php';
 require '../src/CrontabManager.php';
 
 $manager = new CrontabManager();
-$manager->manageFile('cronfile');
-$manager->activate();
+try {
+    $manager->manageFile('cronfile');
+    $manager->activate();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}

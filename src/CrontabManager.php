@@ -1,9 +1,9 @@
 <?
 /**
- * @author Ryan Faerman <ryan.faerman@gmail.com>
- * @author Krzysztof Suszyński <k.suszynski@mediovski.pl>
- * @version 0.2
- * @package php.manager.crontab
+ * @author                                            Ryan Faerman <ryan.faerman@gmail.com>
+ * @author                                            Krzysztof Suszyński <k.suszynski@mediovski.pl>
+ * @version                                           0.2
+ * @package                                           php.manager.crontab
  *
  * Copyright (c) 2009 Ryan Faerman <ryan.faerman@gmail.com>
  *
@@ -13,10 +13,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,65 +28,67 @@
  */
 
 namespace php\manager\crontab;
- 
+
 /**
  * Crontab manager implementation
- * 
+ *
  * @author Krzysztof Suszyński <k.suszynski@mediovski.pl>
- * @author Ryan Faerman <ryan.faerman@gmail.com> 
+ * @author Ryan Faerman <ryan.faerman@gmail.com>
  */
 class CrontabManager
 {
-    
+
     /**
      * Location of the crontab executable
-     * 
+     *
      * @var string
      */
     public $crontab = '/usr/bin/crontab';
-    
+
+    public $cronContent = '';
+
     /**
      * Name of user to install crontab
-     * 
+     *
      * @var string
      */
     public $user = null;
-    
+
     /**
      * Location to save the crontab file.
-     * 
+     *
      * @var string
      */
     private $_tmpfile;
-    
+
     /**
      * @var CronEntry[]
      */
     private $jobs = array();
-    
+
     /**
-     * @var array
+     * @var CronEntry[]
      */
     private $replace = array();
-    
+
     /**
-     * @var array
+     * @var CronEntry[]
      */
     private $files = array();
-    
+
     /**
      * @var array
      */
     private $fileHashes = array();
-    
+
     /**
      * @var boolean
      */
     public $prependRootPath = true;
-    
+
     /**
      * Constructor
-     * 
+     *
      * @return void
      */
     public function __construct()
@@ -94,23 +96,25 @@ class CrontabManager
         $tmpDir = sys_get_temp_dir();
         $this->_tmpfile = tempnam($tmpDir, 'cronman');
     }
-    
+
     /**
      * Creates new job
-     * 
+     *
      * @param string $group
+     *
      * @return CronEntry
      */
     public function newJob($group = null)
     {
         return new CronEntry($this, $group);
     }
-    
+
     /**
      * Adds job to managed list
-     * 
+     *
      * @param CronEntry $job
-     * @param string $file optional
+     * @param string    $file optional
+     *
      * @return CrontabManager
      */
     public function add(CronEntry $job, $file = null)
@@ -125,12 +129,13 @@ class CrontabManager
         }
         return $this;
     }
-    
+
     /**
      * Replace job with another one
-     * 
+     *
      * @param CronEntry $from
      * @param CronEntry $to
+     *
      * @return CrontabManager
      */
     public function replace(CronEntry $from, CronEntry $to)
@@ -138,44 +143,67 @@ class CrontabManager
         $this->replace[] = array($from, $to);
         return $this;
     }
-    
+
+    /**
+     * @var string[]
+     */
+    private $_comments = array();
+
     /**
      * Reads cron file and adds jobs to list
-     * 
+     *
      * @param string $path
+     *
+     * @throws \InvalidArgumentException
+     * @returns void
      */
     public function manageFile($path)
     {
+        $path = realpath($path);
+        if (!$path)
+            return;
         $hash = base_convert(crc32($path), 10, 36);
         $this->fileHashes[$path] = $hash;
         $lines = file($path);
-        $re = '/(([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+))\s+([^\#]+)/';
-        foreach ($lines as $line) {
-            if (preg_match($regex, $line, $match)) {
+        $re = '/^\s*(([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+' .
+            '([^\s\#]+))\s+([^\#]+)/';
+        foreach ($lines as $lineno => $line) {
+            if (preg_match($re, $line, $match)) {
+                // is cron entry
                 list(
+                    $whole,
                     $timeCode,
-                    $minute, 
-                    $hour, 
-                    $dayOfMonth, 
-                    $month, 
+                    $minute,
+                    $hour,
+                    $dayOfMonth,
+                    $month,
                     $dayOfWeek,
                     $command
-                ) = $match;
+                    ) = $match;
                 $job = $this->newJob($hash);
                 if ($this->prependRootPath) {
                     $job->setRootForCommands(dirname($path));
                 }
-                $job->on($timeCode);
-                $job->doJob($command);
-                
+                $job
+                    ->on($timeCode)
+                    ->addComments($this->_comments)
+                    ->doJob($command, $hash, false);
+                $this->_comments = array();
                 $this->add($job, $path);
+            } elseif (preg_match('/^\s*\#/', $line)) {
+                $this->_comments[] = $line;
+            } elseif (trim($line) == '') {
+                continue;
+            } else {
+                $msg = sprintf('Line #%d of file: "%s" is invalid!', $lineno, $path);
+                throw new \InvalidArgumentException($msg);
             }
         }
     }
-    
+
     /**
      * calcuates crontab command
-     * 
+     *
      * @return string
      */
     private function _command()
@@ -187,56 +215,87 @@ class CrontabManager
         $cmd .= $this->crontab;
         return $cmd;
     }
-    
+
+
     /**
      * Save the jobs to disk, remove existing cron
-     * 
+     *
      * @param boolean $includeOldJobs optional
+     *
      * @return boolean
      * @throws \UnexpectedValueException
      */
     public function activate($includeOldJobs = true)
     {
-        $contents = '';
+        $this->cronContent = '';
         if ($includeOldJobs) {
-            $contents = $this->listJobs();
+            try {
+                $this->cronContent = $this->listJobs();
+            } catch (\UnexpectedValueException $e) {
+            }
         }
-        
-        $contents = $this->_prepareContents($contents);
-        
-        $dir = dirname($this->_tmpfile);
-        
-        file_put_contents($this->_tmpfile, $contents, LOCK_EX);
-        $this->_exec($this->crontab.' '.$this->_tmpfile.';', $ret);
+
+        $this->cronContent = $this->_prepareContents($this->cronContent);
+
+        file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
+        $out = $this->_exec($this->crontab . ' ' . $this->_tmpfile . ' 2>&1', $ret);
         unlink($this->_tmpfile);
         if ($ret != 0) {
-            throw new \UnexpectedValueException('Can\'t install new crontab', $retVal);
+            throw new \UnexpectedValueException(
+                $out . "\n" .$this->cronContent, $ret
+            );
         }
     }
-    
+
+    /**
+     * @var string
+     */
     private $_beginBlock = 'BEGIN:%s';
-    private $_endBlock   = 'END:%s';
-    private $_before = 'Autogenerated by CrontabManager. Do not edit. Orginal file: %s';
-    private $_after  = 'End of autogenerated code.';
-    
+    /**
+     * @var string
+     */
+    private $_endBlock = 'END:%s';
+    /**
+     * @var string
+     */
+    private $_before = "Autogenerated by CrontabManager.\n# Do not edit. Orginal file: %s";
+    /**
+     * @var string
+     */
+    private $_after = 'End of autogenerated code.';
+
+    /**
+     * @param string $contents
+     *
+     * @return string
+     */
     private function _prepareContents($contents)
     {
-        $append = array();
-        $contents = explode("\n", $contents);
-        
+        if (empty($contents)) {
+            $contents = array();
+        } else {
+            $contents = explode("\n", $contents);
+        }
+
         foreach ($this->fileHashes as $file => $hash) {
             $contents = $this->_removeBlock($contents, $hash);
             $contents = $this->_addBlock($contents, $file, $hash);
         }
-        $contents[] = '';
+        if ($this->jobs)
+            $contents[] = '';
         foreach ($this->jobs as $job) {
             $contents[] = $job;
         }
         $out = $this->_doReplace($contents);
         $out = preg_replace('/[\n]{3,}/m', "\n\n", $out);
-        return $out;
+        return trim($out) . "\n";
     }
-    
+
+    /**
+     * @param array $contents
+     *
+     * @return string
+     */
     private function _doReplace(array $contents)
     {
         $out = join("\n", $contents);
@@ -247,40 +306,56 @@ class CrontabManager
         }
         return $out;
     }
-    
+
+    /**
+     * @param array  $contents
+     * @param string $file
+     * @param string $hash
+     *
+     * @return array
+     */
     private function _addBlock(array $contents, $file, $hash)
     {
-        $contents[] = '';
         $pre = sprintf('# ' . $this->_beginBlock, $hash);
         $pre .= sprintf(' ' . $this->_before, $file);
         $contents[] = $pre;
-        
+        $contents[] = '';
+
         foreach ($this->files as $jobs) {
             foreach ($jobs as $job) {
                 $contents[] = $job;
-            };
+            }
         }
-        
+
+        $contents[] = '';
         $after = sprintf('# ' . $this->_endBlock, $hash);
         $after .= ' ' . $this->_after;
         $contents[] = $after;
+
+        return $contents;
     }
-    
+
+    /**
+     * @param array  $contents
+     * @param string $hash
+     *
+     * @return array
+     */
     private function _removeBlock(array $contents, $hash)
     {
         $from = sprintf('# ' . $this->_beginBlock, $hash);
-        $to = sprintf('# ' . $this->_beginBlock, $hash);
+        $to = sprintf('# ' . $this->_endBlock, $hash);
         $cut = false;
         $toCut = array();
         foreach ($contents as $no => $line) {
-            if (substr($line, 0, strlen($from)) = $from) {
+            if (substr($line, 0, strlen($from)) == $from) {
                 $cut = true;
             }
             if ($cut) {
                 $toCut[] = $no;
             }
-            if (substr($line, 0, strlen($to)) = $to) {
-                $cut = false;
+            if (substr($line, 0, strlen($to)) == $to) {
+                break;
             }
         }
         foreach ($toCut as $lineNo) {
@@ -288,12 +363,13 @@ class CrontabManager
         }
         return $contents;
     }
-    
+
     /**
      * Runs command in terminal
-     * 
-     * @param string $command
+     *
+     * @param string  $command
      * @param integer $returnVal
+     *
      * @return string
      */
     private function _exec($command, & $returnVal)
@@ -303,10 +379,10 @@ class CrontabManager
         $output = ob_get_clean();
         return $output;
     }
-    
+
     /**
      * List current cron jobs
-     * 
+     *
      * @return string
      * @throws \UnexpectedValueException
      */
