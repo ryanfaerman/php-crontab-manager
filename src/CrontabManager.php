@@ -2,8 +2,8 @@
 /**
  * @author Ryan Faerman <ryan.faerman@gmail.com>
  * @author Krzysztof Suszyński <k.suszynski@mediovski.pl>
- * @version 0.1
- * @package PHPCronTab
+ * @version 0.2
+ * @package php.manager.crontab
  *
  * Copyright (c) 2009 Ryan Faerman <ryan.faerman@gmail.com>
  *
@@ -43,52 +43,46 @@ class CrontabManager
      * 
      * @var string
      */
-    private $crontab = '/usr/bin/crontab';
+    public $crontab = '/usr/bin/crontab';
+    
+    /**
+     * Name of user to install crontab
+     * 
+     * @var string
+     */
+    public $user = null;
     
     /**
      * Location to save the crontab file.
      * 
      * @var string
      */
-    private $destination = '/tmp/CronManager';
+    private $_tmpfile;
     
     /**
-     * Minute (0 - 59)
-     * 
-     * @var string
+     * @var CronEntry[]
      */
-    private $minute   = 0;
-    
-    /**
-     * Hour (0 - 23)
-     * @var string
-     */
-    private $hour     = 10;
-    
-    /**
-     * Day of Month (1 - 31)
-     * 
-     * @var string
-     */
-    private $dayOfMonth = '*';
-    
-    /**
-     * Month (1 - 12) OR jan,feb,mar,apr...
-     * 
-     * @var string
-     */
-    private $month = '*';
-    
-    /**
-     * Day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
-     * @var string
-     */
-    private $dayOfWeek = '*';
+    private $jobs = array();
     
     /**
      * @var array
      */
-    private $jobs = array();
+    private $replace = array();
+    
+    /**
+     * @var array
+     */
+    private $files = array();
+    
+    /**
+     * @var array
+     */
+    private $fileHashes = array();
+    
+    /**
+     * @var boolean
+     */
+    public $prependRootPath = true;
     
     /**
      * Constructor
@@ -97,111 +91,101 @@ class CrontabManager
      */
     public function __construct()
     {
-        
+        $tmpDir = sys_get_temp_dir();
+        $this->_tmpfile = tempnam($tmpDir, 'cronman');
     }
     
     /**
-     * Set minute or minutes
+     * Creates new job
      * 
-     * @param string $minute required
+     * @param string $group
+     * @return CronEntry
+     */
+    public function newJob($group = null)
+    {
+        return new CronEntry($this, $group);
+    }
+    
+    /**
+     * Adds job to managed list
+     * 
+     * @param CronEntry $job
+     * @param string $file optional
      * @return CrontabManager
      */
-    public function onMinute($minute)
+    public function add(CronEntry $job, $file = null)
     {
-        $this->minute = $minute;
+        if (!$file) {
+            $this->jobs[] = $job;
+        } else {
+            if (!isset($this->files[$file])) {
+                $this->files[$file] = array();
+            }
+            $this->files[$file][] = $job;
+        }
         return $this;
     }
     
     /**
-     * Set hour or hours
+     * Replace job with another one
      * 
-     * @param string $hour required
+     * @param CronEntry $from
+     * @param CronEntry $to
      * @return CrontabManager
      */
-    public function onHour($hour)
+    public function replace(CronEntry $from, CronEntry $to)
     {
-        $this->hour = $hour;
+        $this->replace[] = array($from, $to);
         return $this;
     }
     
     /**
-     * Set day of month or days of month
+     * Reads cron file and adds jobs to list
      * 
-     * @param string $dayOfMonth required
-     * @return CrontabManager
+     * @param string $path
      */
-    public function onDayOfMonth($dayOfMonth)
+    public function manageFile($path)
     {
-        $this->dayOfMonth = $dayOfMonth;
-        return $this;
+        $hash = base_convert(crc32($path), 10, 36);
+        $this->fileHashes[$path] = $hash;
+        $lines = file($path);
+        $re = '/(([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+([^\s]+))\s+([^\#]+)/';
+        foreach ($lines as $line) {
+            if (preg_match($regex, $line, $match)) {
+                list(
+                    $timeCode,
+                    $minute, 
+                    $hour, 
+                    $dayOfMonth, 
+                    $month, 
+                    $dayOfWeek,
+                    $command
+                ) = $match;
+                $job = $this->newJob($hash);
+                if ($this->prependRootPath) {
+                    $job->setRootForCommands(dirname($path));
+                }
+                $job->on($timeCode);
+                $job->doJob($command);
+                
+                $this->add($job, $path);
+            }
+        }
     }
     
     /**
-     * Set month or months
+     * calcuates crontab command
      * 
-     * @param string $month required
-     * @return CrontabManager
+     * @return string
      */
-    public function onMonth($month)
+    private function _command()
     {
-        $this->month = $month;
-        return $this;
-    }
-    
-    /**
-     * Set day of week or days of week
-     * 
-     * @param string $minute required
-     * @return CrontabManager
-     */
-    public function onDayOfWeek($day)
-    {
-        $this->dayOfWeek = $dayOfWeek;
-        return $this;
-    }
-    
-    /**
-     * Set entire time code with one public function.
-     * 
-     * Set entire time code with one public function. This has to be a 
-     * complete entry. See http://en.wikipedia.org/wiki/Cron#crontab_syntax
-     * 
-     * @param string $timeCode required
-     * @return CrontabManager
-     */
-    public function on($timeCode)
-    {
-        list(
-            $this->minute, 
-            $this->hour, 
-            $this->dayOfMonth, 
-            $this->month, 
-            $this->dayOfWeek
-        ) = preg_split('\s+', $timeCode);
-        
-        return $this;
-    }
-    
-    /**
-     * Add job to the jobs array.
-     * 
-     * Add job to the jobs array. Each time segment should be set before calling 
-     * this method. The job should include the absolute path to the commands 
-     * being used.
-     * 
-     * @param string $job required
-     * @return CrontabManager
-     */
-    public function doJob($job)
-    {
-        $this->jobs[] =    $this->minute.' '.
-                        $this->hour.' '.
-                        $this->dayOfMonth.' '.
-                        $this->month.' '.
-                        $this->dayOfWeek.' '.
-                        $job;
-        
-        return $this;
+        $cmd = '';
+        if ($this->user) {
+            $cmd .= sprintf('sudo -u %s ', $this->user);
+        }
+        $cmd .= $this->crontab;
+        return $cmd;
     }
     
     /**
@@ -209,34 +193,130 @@ class CrontabManager
      * 
      * @param boolean $includeOldJobs optional
      * @return boolean
+     * @throws \UnexpectedValueException
      */
     public function activate($includeOldJobs = true)
     {
-        $contents  = implode("\n", $this->jobs);
-        $contents .= "\n";
-        
-        if($includeOldJobs) {
-            $contents .= $this->listJobs();
+        $contents = '';
+        if ($includeOldJobs) {
+            $contents = $this->listJobs();
         }
         
-        if(is_writable($this->destination) || !file_exists($this->destination)){
-            exec($this->crontab.' -r;');
-            file_put_contents($this->destination, $contents, LOCK_EX);
-            exec($this->crontab.' '.$this->destination.';');
-            return true;
+        $contents = $this->_prepareContents($contents);
+        
+        $dir = dirname($this->_tmpfile);
+        
+        file_put_contents($this->_tmpfile, $contents, LOCK_EX);
+        $this->_exec($this->crontab.' '.$this->_tmpfile.';', $ret);
+        unlink($this->_tmpfile);
+        if ($ret != 0) {
+            throw new \UnexpectedValueException('Can\'t install new crontab', $retVal);
+        }
+    }
+    
+    private $_beginBlock = 'BEGIN:%s';
+    private $_endBlock   = 'END:%s';
+    private $_before = 'Autogenerated by CrontabManager. Do not edit. Orginal file: %s';
+    private $_after  = 'End of autogenerated code.';
+    
+    private function _prepareContents($contents)
+    {
+        $append = array();
+        $contents = explode("\n", $contents);
+        
+        foreach ($this->fileHashes as $file => $hash) {
+            $contents = $this->_removeBlock($contents, $hash);
+            $contents = $this->_addBlock($contents, $file, $hash);
+        }
+        $contents[] = '';
+        foreach ($this->jobs as $job) {
+            $contents[] = $job;
+        }
+        $out = $this->_doReplace($contents);
+        $out = preg_replace('/[\n]{3,}/m', "\n\n", $out);
+        return $out;
+    }
+    
+    private function _doReplace(array $contents)
+    {
+        $out = join("\n", $contents);
+        foreach ($this->replace as $fromJob => $toTob) {
+            $from = $fromJob->render(false);
+            $out = str_replace($fromJob, $toTob, $out);
+            $out = str_replace($from, $toTob, $out);
+        }
+        return $out;
+    }
+    
+    private function _addBlock(array $contents, $file, $hash)
+    {
+        $contents[] = '';
+        $pre = sprintf('# ' . $this->_beginBlock, $hash);
+        $pre .= sprintf(' ' . $this->_before, $file);
+        $contents[] = $pre;
+        
+        foreach ($this->files as $jobs) {
+            foreach ($jobs as $job) {
+                $contents[] = $job;
+            };
         }
         
-        return false;
+        $after = sprintf('# ' . $this->_endBlock, $hash);
+        $after .= ' ' . $this->_after;
+        $contents[] = $after;
+    }
+    
+    private function _removeBlock(array $contents, $hash)
+    {
+        $from = sprintf('# ' . $this->_beginBlock, $hash);
+        $to = sprintf('# ' . $this->_beginBlock, $hash);
+        $cut = false;
+        $toCut = array();
+        foreach ($contents as $no => $line) {
+            if (substr($line, 0, strlen($from)) = $from) {
+                $cut = true;
+            }
+            if ($cut) {
+                $toCut[] = $no;
+            }
+            if (substr($line, 0, strlen($to)) = $to) {
+                $cut = false;
+            }
+        }
+        foreach ($toCut as $lineNo) {
+            unset($contents[$lineNo]);
+        }
+        return $contents;
+    }
+    
+    /**
+     * Runs command in terminal
+     * 
+     * @param string $command
+     * @param integer $returnVal
+     * @return string
+     */
+    private function _exec($command, & $returnVal)
+    {
+        ob_start();
+        passthru($command, $returnVal);
+        $output = ob_get_clean();
+        return $output;
     }
     
     /**
      * List current cron jobs
      * 
      * @return string
+     * @throws \UnexpectedValueException
      */
     public function listJobs()
     {
-        return exec($this->crontab.' -l;');
+        $out = $this->_exec($this->_command() . ' -l;', $retVal);
+        if ($retVal != 0) {
+            throw new \UnexpectedValueException('No cron file or no permissions to list', $retVal);
+        }
+        return $out;
     }
 }
 
