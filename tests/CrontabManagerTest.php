@@ -56,10 +56,18 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
         $job = $this->object->newJob('1 2 3 4 5 w');
         $this->object->add($job);
 
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
+        $job2 = $this->object->newJob('2 3 4 5 6 w');
+        $this->object->add($job2, '/tmp/a1');
 
+        $this->object->save();
+
+        $saved = $this->object->listJobs();
+        $lines = explode("\n", $saved);
+
+        $this->assertEquals(12, count($lines));
+
+        $this->assertContains($job->render(true), $saved);
+        $this->assertContains($job2->render(true), $saved);
     }
 
     /**
@@ -76,7 +84,7 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
     /**
      * @todo Implement testEnableFile().
      */
-    public function testEnableOrUpdateFile()
+    public function testEnableOrUpdate()
     {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -87,7 +95,7 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
     /**
      * @todo Implement testDisableFile().
      */
-    public function testDisableFile()
+    public function testDisable()
     {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
