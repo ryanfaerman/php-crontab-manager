@@ -29,7 +29,7 @@ class CronEntryTest extends \PHPUnit_Framework_TestCase
         
         $manager = new MockCrontabManager();
         $manager->setInitialContents($content);
-        $this->object = new CronEntry($manager);
+        $this->object = new CronEntry(null, $manager);
     }
 
     public function testSetRootForCommands()
@@ -48,6 +48,30 @@ class CronEntryTest extends \PHPUnit_Framework_TestCase
         $this->object->doJob('uptime > /tmp/a');
         $expected = $on . '	' . '/usr/bin/uptime > /tmp/a';
         $this->assertEquals($expected, $this->object->render(false));
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidCreate()
+    {
+        new CronEntry('qazwsxedcrfv');
+    }
+
+    public function testCreateWithGroup()
+    {
+        $content = file_get_contents(__DIR__ . '/resources/cronfile.txt');
+
+        $manager = new MockCrontabManager();
+        $manager->setInitialContents($content);
+
+        $job = new CronEntry('* * * * * w', $manager, 'q1');
+        $expected = '*	*	*	*	*	/usr/bin/w # qn15b0';
+        $this->assertEquals($expected, $job->render(true));
+
+        $job = new CronEntry('* * * * * w', $manager);
+        $expected = '*	*	*	*	*	/usr/bin/w # 1a3g7fr';
+        $this->assertEquals($expected, $job->render(true));
     }
 
     public function testOnMinute()
@@ -151,8 +175,13 @@ class CronEntryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->object->render(false));
         
         $this->object->doJob('w');
-        $expected = $on . '	' . '/usr/bin/w';
-        $this->assertEquals($expected, $this->object->render(false));
+        $expected = $on . '	' . '/usr/bin/w # 1a3g7fr';
+        $this->assertEquals($expected, $this->object->render(true));
+
+
+        $this->object->doJob('w', 'a1', true);
+        $expected = $on . '	' . '/usr/bin/w # bv1vt9';
+        $this->assertEquals($expected, $this->object->render(true));
     }
 
     public function testAddComments()

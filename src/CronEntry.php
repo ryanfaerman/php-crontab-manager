@@ -87,7 +87,7 @@ class CronEntry
     /**
      * Cron manager
      *
-     * @var CrontabManager
+     * @var CrontabManager|null
      */
     private $_manager;
 
@@ -97,9 +97,14 @@ class CronEntry
     private $_root = '';
 
     /**
-     * @var null
+     * @var array|null
      */
     public $comments = null;
+
+    /**
+     * @var string|null
+     */
+    public $lineComment = null;
 
     /**
      * Constructor
@@ -107,12 +112,52 @@ class CronEntry
      * @param CrontabManager $manager
      * @param string|null    $group
      */
-    public function __construct(CrontabManager $manager, $group = null)
+    public function __construct($jobSpec = null,
+                                CrontabManager $manager = null, $group = null)
     {
+        if ($jobSpec) {
+            $this->_parse($jobSpec);
+        }
         $this->_manager = $manager;
         if ($group) {
             $this->group = $group;
         }
+    }
+
+    /**
+     * Parse crontab line into CronEntry object
+     *
+     * @param string $jobSpec
+     * @return CronEntry
+     * @throw \InvalidArgumentException if $jobSpec isn't crontab entry
+     */
+    private function _parse($jobSpec)
+    {
+        $regex = '/^\s*(([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+' .
+            '([^\s\#]+))\s+([^\#]+)(?:#(.*))?$/';
+        if (!preg_match($regex, $jobSpec, $match)) {
+            throw new \InvalidArgumentException('$jobSpec must be crontab compatibile entry');
+        }
+        list(,,
+            $minute,
+            $hour,
+            $dayOfMonth,
+            $month,
+            $dayOfWeek,
+            $command) = $match;
+        if (isset($match[8])) {
+            $lineComment = $match[8];
+            $this->lineComment = trim($lineComment);
+        }
+        $this
+            ->onMinute($minute)
+            ->onHour($hour)
+            ->onDayOfMonth($dayOfMonth)
+            ->onMonth($month)
+            ->onDayOfWeek($dayOfWeek);
+        $this->doJob($command);
+
+        return $this;
     }
 
     /**
@@ -208,7 +253,7 @@ class CronEntry
             $this->dayOfMonth,
             $this->month,
             $this->dayOfWeek
-            ) = preg_split('/\s+/', $timeCode);
+            ) = preg_split('/\s+/', trim($timeCode));
 
         return $this;
     }
@@ -234,7 +279,7 @@ class CronEntry
         if ($group) {
             $this->group = $group;
         }
-        if ($autoAdd) {
+        if ($autoAdd && $this->_manager) {
             $this->_manager->add($this);
         }
 
@@ -266,12 +311,9 @@ class CronEntry
         $first = current($parts);
         unset($parts[key($parts)]);
         ob_start();
-        if (trim($first) == '') {
-            return '';
-        }
         passthru("which $first", $ret);
         $fullcommand = trim(ob_get_clean());
-        if ($ret == 0) {
+        if ($ret == 0 && substr($fullcommand, 0, 1) == '/') {
             return trim($fullcommand . ' ' . join(' ', $parts));
         } else {
             $root = $this->_root;
@@ -303,14 +345,21 @@ class CronEntry
         );
         $entry = join("\t", $entry);
         if ($commentEntry) {
-            $hash = base_convert(crc32($entry), 10, 36);
+            $hash = base_convert(
+                crc32($entry . $this->group),
+                10, 36
+            );
             $comments = is_array($this->comments) ? $this->comments : array();
             $comments = $this->_fixComments($comments);
             $comments = join("\n", $comments);
             if (!empty($comments)) {
                 $comments .= "\n";
             }
-            $entry = $comments . $entry . " # $hash";
+            $entry = $comments . $entry . " # ";
+            if ($this->lineComment) {
+                $entry .= $this->lineComment . ' ';
+            }
+            $entry .= $hash;
         }
         return $entry;
     }

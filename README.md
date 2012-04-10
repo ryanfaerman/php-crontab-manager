@@ -35,7 +35,7 @@ in the cron:
     use php\manager\crontab\CrontabManager;
     
     $crontab = new CrontabManager();
-    $crontab->enableOrUpdateFile('/tmp/my/crontab.txt');
+    $crontab->enableOrUpdate('/tmp/my/crontab.txt');
     $crontab->disable('/tmp/toremove.txt');
     $crontab->save();
     

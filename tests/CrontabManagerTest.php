@@ -37,19 +37,29 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
         $job = $this->object->newJob();
         $this->assertInstanceOf('php\manager\crontab\CronEntry', $job);
         $actual = $job->render();
-        $expected = 'dgfg';
+        $expected = '';
+        $this->assertEquals($expected, $actual);
+
+        $job = $this->object->newJob('* * 5 * * w # line comment');
+        $actual = $job->render();
+        $expected = '*	*	5	*	*	/usr/bin/w # line comment 1leww77';
+        $this->assertEquals($expected, $actual);
+
+        $job = $this->object->newJob('1 2 3 4 5 w');
+        $actual = $job->render(false);
+        $expected = '1	2	3	4	5	/usr/bin/w';
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @todo Implement testAdd().
-     */
     public function testAdd()
     {
-        // Remove the following lines when you implement this test.
+        $job = $this->object->newJob('1 2 3 4 5 w');
+        $this->object->add($job);
+
         $this->markTestIncomplete(
-          'This test has not been implemented yet.'
+            'This test has not been implemented yet.'
         );
+
     }
 
     /**
