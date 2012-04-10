@@ -18,6 +18,7 @@ Usage
 Here is a simple example of use. Adding a simple task to crontab:
 
 ```php
+<?php
 use php\manager\crontab\CrontabManager;
 
 $crontab = new CrontabManager();
@@ -35,6 +36,7 @@ manage by the cron job. Files will be updated so as not to disrupt other tasks
 in the cron:
 
 ```php
+<?php
 use php\manager\crontab\CrontabManager;
 
 $crontab = new CrontabManager();
