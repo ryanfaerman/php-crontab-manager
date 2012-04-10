@@ -8,21 +8,35 @@ crontab file to the target.
 Installation
 ------------
 
- # copy files to your project
- # include files from src directory or use some autoloader
- # use it!
+* copy files to your project
+* include files from src directory or use some autoloader
+* use it as described below
 
 Usage
 -----
 
-Simple usage:
+Here is a simple example of use. Adding a simple task to crontab:
 
     use php\manager\crontab\CrontabManager;
     
     $crontab = new CrontabManager();
+    $job = $crontab->newJob();
+    $job->on('* * * * *');
+    $job->onMinute('20-30')->doJob("echo foo;");
+    $crontab->add($job);
+    $job->onMinute('35-40')->doJob("echo bar;");
+    $crontab->add($job);
+    $crontab->save();
     
-    $crontab->on('* * * * *');
-    $crontab->onMinute('20-30')->doJob("echo foo;");
-    $crontab->onMinute('35-40')->doJob("echo bar;");
+A more complex example, but simpler to write. Adding and removing files to 
+manage by the cron job. Files will be updated so as not to disrupt other tasks
+in the cron:
+
+    use php\manager\crontab\CrontabManager;
     
-    $crontab->activate();
+    $crontab = new CrontabManager();
+    $crontab->enableOrUpdateFile('/tmp/my/crontab.txt');
+    $crontab->disable('/tmp/toremove.txt');
+    $crontab->save();
+    
+

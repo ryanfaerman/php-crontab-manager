@@ -227,7 +227,7 @@ class CronEntry
      *
      * @return CrontabManager
      */
-    public function doJob($job, $group = null, $autoAdd = true)
+    public function doJob($job, $group = null, $autoAdd = false)
     {
         $this->job = $job;
         $this->job = preg_replace('/\\\n/m', '', $this->job);
@@ -266,6 +266,9 @@ class CronEntry
         $first = current($parts);
         unset($parts[key($parts)]);
         ob_start();
+        if (trim($first) == '') {
+            return '';
+        }
         passthru("which $first", $ret);
         $fullcommand = trim(ob_get_clean());
         if ($ret == 0) {
@@ -301,13 +304,33 @@ class CronEntry
         $entry = join("\t", $entry);
         if ($commentEntry) {
             $hash = base_convert(crc32($entry), 10, 36);
-            $comments = join("\n", $this->comments);
+            $comments = is_array($this->comments) ? $this->comments : array();
+            $comments = $this->_fixComments($comments);
+            $comments = join("\n", $comments);
             if (!empty($comments)) {
                 $comments .= "\n";
             }
             $entry = $comments . $entry . " # $hash";
         }
         return $entry;
+    }
+    
+    /**
+     * Fix comments by adding # sign
+     * 
+     * @param array $comments
+     * @return array
+     */
+    private function _fixComments(array $comments)
+    {
+        $fixed = array();
+        foreach ($comments as $comment) {
+            if (!preg_match('/^\s*#/', $comment)) {
+                $comment = '# ' . $comment;
+            }
+            $fixed[] = $comment;
+        }
+        return $fixed;
     }
 
     /**

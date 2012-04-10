@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * @author                                            Ryan Faerman <ryan.faerman@gmail.com>
  * @author                                            Krzysztof Suszyński <k.suszynski@mediovski.pl>
@@ -106,7 +106,7 @@ class CrontabManager
      * 
      * @return CrontabManager
      */
-    private function _setTempFile()
+    protected function _setTempFile()
     {
         $tmpDir = sys_get_temp_dir();
         $this->_tmpfile = tempnam($tmpDir, 'cronman');
@@ -222,7 +222,7 @@ class CrontabManager
      * @param string $filename
      * @returns CrontabManager
      */
-    public function enableFile($filename)
+    public function enableOrUpdateFile($filename)
     {
         $path = realpath($filename);
         if (!$path)
@@ -298,6 +298,17 @@ class CrontabManager
 
         $this->cronContent = $this->_prepareContents($this->cronContent);
 
+        $this->_replaceCronContents();
+    }
+
+    /**
+     * Replaces cron contents
+     * 
+     * @throws \UnexpectedValueException
+     * @return CrontabManager
+     */
+    protected function _replaceCronContents()
+    {
         file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
         $out = $this->_exec($this->crontab . ' ' . $this->_tmpfile . ' 2>&1', $ret);
         unlink($this->_tmpfile);
@@ -307,6 +318,7 @@ class CrontabManager
                 $out . "\n" .$this->cronContent, $ret
             );
         }
+        return $this;
     }
 
     /**

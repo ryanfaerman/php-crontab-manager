@@ -1,5 +1,0 @@
-# m h   dom m   dow command
-
-
-# some comments before cron
-*   *   *   *   * w > /tmp/wwload
