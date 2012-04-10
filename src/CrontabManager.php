@@ -80,6 +80,11 @@ class CrontabManager
      * @var array
      */
     private $fileHashes = array();
+    
+    /**
+     * @var array
+     */
+    private $filesToRemove = array();
 
     /**
      * @var boolean
@@ -93,8 +98,20 @@ class CrontabManager
      */
     public function __construct()
     {
+        $this->_setTempFile();
+    }
+    
+    /**
+     * Sets tempfile name
+     * 
+     * @return CrontabManager
+     */
+    private function _setTempFile()
+    {
         $tmpDir = sys_get_temp_dir();
         $this->_tmpfile = tempnam($tmpDir, 'cronman');
+        
+        return $this;
     }
 
     /**
@@ -148,22 +165,19 @@ class CrontabManager
      * @var string[]
      */
     private $_comments = array();
-
+    
     /**
-     * Reads cron file and adds jobs to list
-     *
+     * Parse input cron file to cron entires
+     * 
      * @param string $path
-     *
+     * @param string $hash
+     * @return CronEntry[]
      * @throws \InvalidArgumentException
-     * @returns void
      */
-    public function manageFile($path)
+    private function _parseFile($path, $hash)
     {
-        $path = realpath($path);
-        if (!$path)
-            return;
-        $hash = base_convert(crc32($path), 10, 36);
-        $this->fileHashes[$path] = $hash;
+        $jobs = array();
+        
         $lines = file($path);
         $re = '/^\s*(([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+([^\s\#]+)\s+' .
             '([^\s\#]+))\s+([^\#]+)/';
@@ -189,7 +203,6 @@ class CrontabManager
                     ->addComments($this->_comments)
                     ->doJob($command, $hash, false);
                 $this->_comments = array();
-                $this->add($job, $path);
             } elseif (preg_match('/^\s*\#/', $line)) {
                 $this->_comments[] = $line;
             } elseif (trim($line) == '') {
@@ -198,7 +211,55 @@ class CrontabManager
                 $msg = sprintf('Line #%d of file: "%s" is invalid!', $lineno, $path);
                 throw new \InvalidArgumentException($msg);
             }
+            $jobs[] = $job;
         }
+        return $jobs;
+    }
+
+    /**
+     * Reads cron file and adds jobs to list
+     *
+     * @param string $filename
+     * @returns CrontabManager
+     */
+    public function enableFile($filename)
+    {
+        $path = realpath($filename);
+        if (!$path)
+            return;
+        $hash = base_convert(crc32($path), 10, 36);
+        
+        if (isset($this->filesToRemove[$hash])) {
+            unset($this->filesToRemove[$hash]);
+        }
+        $this->fileHashes[$path] = $hash;
+        $jobs = $this->_parseFile($path, $hash);
+        foreach ($jobs as $job) {
+            $this->add($job, $path);
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * Disable file from crontab
+     * 
+     * @param string $filename
+     * @return CrontabManager
+     */
+    public function disableFile($filename)
+    {
+        $path = realpath($filename);
+        if (!$path)
+            return;
+        $hash = base_convert(crc32($path), 10, 36);
+        if (isset($this->fileHashes[$path])) {
+            unset($this->fileHashes[$path]);
+            unset($this->files[$path]);
+        }
+        $this->filesToRemove[$hash] = $path;
+        
+        return $this;
     }
 
     /**
@@ -225,7 +286,7 @@ class CrontabManager
      * @return boolean
      * @throws \UnexpectedValueException
      */
-    public function activate($includeOldJobs = true)
+    public function save($includeOldJobs = true)
     {
         $this->cronContent = '';
         if ($includeOldJobs) {
@@ -240,6 +301,7 @@ class CrontabManager
         file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
         $out = $this->_exec($this->crontab . ' ' . $this->_tmpfile . ' 2>&1', $ret);
         unlink($this->_tmpfile);
+        $this->_setTempFile();
         if ($ret != 0) {
             throw new \UnexpectedValueException(
                 $out . "\n" .$this->cronContent, $ret
@@ -275,6 +337,10 @@ class CrontabManager
             $contents = array();
         } else {
             $contents = explode("\n", $contents);
+        }
+        
+        foreach ($this->filesToRemove as $file) {
+            $contents = $this->_removeBlock($contents, $hash);
         }
 
         foreach ($this->fileHashes as $file => $hash) {

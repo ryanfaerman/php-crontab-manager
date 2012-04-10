@@ -33,7 +33,8 @@ require '../src/CrontabManager.php';
 
 $manager = new CrontabManager();
 try {
-    $manager->manageFile('cronfile');
+    $manager->disableFile('cronfile');
+    $manager->enableFile('cronfile');
     $manager->activate();
 } catch (Exception $e) {
     echo $e->getMessage();
