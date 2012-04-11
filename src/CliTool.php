@@ -34,11 +34,6 @@ namespace php\manager\crontab;
 class CliTool
 {
     /**
-     * @var string
-     */
-    private $_progName;
-
-    /**
      * @var bool
      */
     protected $_verbose = false;
@@ -231,7 +226,7 @@ class CliTool
     /**
      * Enable CRON file action
      */
-    public function enable()
+    private function enable()
     {
         $this->_loadClasses();
         $manager = new CrontabManager();
@@ -248,7 +243,7 @@ class CliTool
     /**
      * Enable CRON file action
      */
-    public function disable()
+    private function disable()
     {
         $this->_loadClasses();
         $manager = new CrontabManager();
@@ -267,9 +262,9 @@ class CliTool
      *
      * @return string
      */
-    public function usage()
+    private function usage()
     {
-        $usage = "Usage: {$this->_progName} <--enable|-e FILE,--disable|-d FILE> [--user|-u USER] [--verbose|-v] [--help|-h] [--usage]";
+        $usage = "Usage: cronman <--enable|-e FILE,--disable|-d FILE> [--user|-u USER] [--verbose|-v] [--help|-h] [--usage]";
         $usage .= "\n\n";
         $usage .= "Required params:\n";
         $usage .= "   --enable|-e FILE   Enable target FILE to crontab, replace it if already set\n";

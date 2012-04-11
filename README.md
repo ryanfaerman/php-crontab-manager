@@ -26,9 +26,9 @@ use php\manager\crontab\CrontabManager;
 $crontab = new CrontabManager();
 $job = $crontab->newJob();
 $job->on('* * * * *');
-$job->onMinute('20-30')->doJob("echo foo;");
+$job->onMinute('20-30')->doJob("echo foo");
 $crontab->add($job);
-$job->onMinute('35-40')->doJob("echo bar;");
+$job->onMinute('35-40')->doJob("echo bar");
 $crontab->add($job);
 $crontab->save();
 ```
@@ -49,4 +49,5 @@ $crontab->save();
 
 You can also use the built-in tools from the console: cronman located in the
 directory `bin/` for ex.:
+
     bin/cronman --enable project-cronfile --user www-data
