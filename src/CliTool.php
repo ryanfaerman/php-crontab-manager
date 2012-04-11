@@ -226,7 +226,7 @@ class CliTool
     /**
      * Enable CRON file action
      */
-    private function enable()
+    public function enable()
     {
         $this->_loadClasses();
         $manager = new CrontabManager();
@@ -243,7 +243,7 @@ class CliTool
     /**
      * Enable CRON file action
      */
-    private function disable()
+    public function disable()
     {
         $this->_loadClasses();
         $manager = new CrontabManager();
@@ -262,7 +262,7 @@ class CliTool
      *
      * @return string
      */
-    private function usage()
+    public function usage()
     {
         $usage = "Usage: cronman <--enable|-e FILE,--disable|-d FILE> [--user|-u USER] [--verbose|-v] [--help|-h] [--usage]";
         $usage .= "\n\n";
