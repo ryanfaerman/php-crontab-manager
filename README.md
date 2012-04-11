@@ -1,6 +1,8 @@
 PHP Crontab Manager
 ===================
 
+Last build status: [![Build Status](https://secure.travis-ci.org/MediovskiTechnology/php-crontab-manager.png?branch=master)](http://travis-ci.org/MediovskiTechnology/php-crontab-manager)
+
 Manages crontab file by adding and deleting the appropriate entries. It is able
 to track the source file so that after the changes in this file to upgrade a 
 crontab file to the target.
