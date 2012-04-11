@@ -207,7 +207,7 @@ class CrontabManager
                 $jobs[] = $job;
             } catch (\Exception $exc) {
                 if (preg_match('/^\s*\#/', $line)) {
-                    $this->_comments[] = $line;
+                    $this->_comments[] = trim($line);
                 } elseif (trim($line) == '') {
                     $this->_comments = array();
                     continue;
@@ -430,10 +430,8 @@ class CrontabManager
         $out = join("\n", $contents);
         foreach ($this->replace as $entry) {
             list($fromJob, $toTob) = $entry;
-            /* @var $fromJob CronEntry */
-            /* @var $toTob CronEntry */
-            $from = $fromJob->render(false);
-            $out = str_replace($fromJob, $toTob, $out);
+            $from = $fromJob->render(false);            /* @var $fromJob CronEntry */
+            $out = str_replace($fromJob, $toTob, $out); /* @var $toTob CronEntry */
             $out = str_replace($from, $toTob, $out);
         }
         return $out;
