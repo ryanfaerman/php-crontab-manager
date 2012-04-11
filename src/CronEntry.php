@@ -346,7 +346,7 @@ class CronEntry
         $entry = join("\t", $entry);
         if ($commentEntry) {
             $hash = base_convert(
-                crc32($entry . $this->group),
+                $this->_signedInt(crc32($entry . $this->group)),
                 10, 36
             );
             $comments = is_array($this->comments) ? $this->comments : array();
@@ -362,6 +362,23 @@ class CronEntry
             $entry .= $hash;
         }
         return $entry;
+    }
+
+    /**
+     * Gets signed int from unsigned 64bit int
+     *
+     * @param integer $in
+     * @return integer
+     */
+    private static function _signedInt($in)
+    {
+        $int_max = 2147483647; // pow(2, 31) - 1
+        if ($in > $int_max) {
+            $out = $in - $int_max * 2 - 2;
+        } else {
+            $out = $in;
+        }
+        return $out;
     }
     
     /**

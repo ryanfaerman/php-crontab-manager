@@ -290,8 +290,27 @@ class CrontabManager
      */
     private function _shortHash($input)
     {
-        $hash = base_convert(crc32($input), 10, 36);
+        $hash = base_convert(
+            $this->_signedInt(crc32($input)), 10, 36
+        );
         return $hash;
+    }
+
+    /**
+     * Gets signed int from unsigned 64bit int
+     *
+     * @param integer $in
+     * @return integer
+     */
+    private static function _signedInt($in)
+    {
+        $int_max = 2147483647; // pow(2, 31) - 1
+        if ($in > $int_max) {
+            $out = $in - $int_max * 2 - 2;
+        } else {
+            $out = $in;
+        }
+        return $out;
     }
 
     /**

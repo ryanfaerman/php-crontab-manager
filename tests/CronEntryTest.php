@@ -70,7 +70,7 @@ class CronEntryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $job->render(true));
 
         $job = new CronEntry('* * * * * w', $manager);
-        $expected = '*	*	*	*	*	/usr/bin/w # 1a3g7fr';
+        $expected = '*	*	*	*	*	/usr/bin/w # oxnujd';
         $this->assertEquals($expected, $job->render(true));
     }
 
@@ -175,7 +175,7 @@ class CronEntryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->object->render(false));
         
         $this->object->doJob('w');
-        $expected = $on . '	' . '/usr/bin/w # 1a3g7fr';
+        $expected = $on . '	' . '/usr/bin/w # oxnujd';
         $this->assertEquals($expected, $this->object->render(true));
 
 

@@ -42,7 +42,7 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
 
         $job = $this->object->newJob('* * 5 * * w # line comment');
         $actual = $job->render();
-        $expected = '*	*	5	*	*	/usr/bin/w # line comment 1leww77';
+        $expected = '*	*	5	*	*	/usr/bin/w # line comment dm75rx';
         $this->assertEquals($expected, $actual);
 
         $job = $this->object->newJob('1 2 3 4 5 w');
