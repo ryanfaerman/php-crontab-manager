@@ -46,6 +46,8 @@ class MockCrontabManager extends CrontabManager
      */
     protected function _writeContents($contents)
     {
+        ftruncate($this->mockcron, 0);
+        rewind($this->mockcron);
         fwrite($this->mockcron, $contents);
         fflush($this->mockcron);
         rewind($this->mockcron);
@@ -68,6 +70,7 @@ class MockCrontabManager extends CrontabManager
      */
     public function listJobs()
     {
+        rewind($this->mockcron);
         $buff = '';
         while (!feof($this->mockcron)) {
             $buff .= fread($this->mockcron, 1024);

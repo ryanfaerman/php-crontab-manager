@@ -1,8 +1,8 @@
 <?php
 /**
- * @author                                                      Krzysztof Suszyński <k.suszynski@mediovski.pl>
- * @version                                                     0.2
- * @package                                                     php.manager.crontab
+ * @author   Krzysztof Suszyński <k.suszynski@mediovski.pl>
+ * @version  0.2
+ * @package  php.manager.crontab
  *
  * Copyright (c) 2012 Krzysztof Suszyński <k.suszynski@mediovski.pl>
  *

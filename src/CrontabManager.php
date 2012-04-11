@@ -1,9 +1,9 @@
 <?php
 /**
- * @author                                            Ryan Faerman <ryan.faerman@gmail.com>
- * @author                                            Krzysztof Suszyński <k.suszynski@mediovski.pl>
- * @version                                           0.2
- * @package                                           php.manager.crontab
+ * @author   Ryan Faerman <ryan.faerman@gmail.com>
+ * @author   Krzysztof Suszyński <k.suszynski@mediovski.pl>
+ * @version  0.2
+ * @package  php.manager.crontab
  *
  * Copyright (c) 2009 Ryan Faerman <ryan.faerman@gmail.com>
  *
@@ -102,12 +102,25 @@ class CrontabManager
     }
 
     /**
+     * Destrutor
+     */
+    public function __destruct()
+    {
+        if ($this->_tmpfile && is_file($this->_tmpfile)) {
+            unlink($this->_tmpfile);
+        }
+    }
+
+    /**
      * Sets tempfile name
      *
      * @return CrontabManager
      */
     protected function _setTempFile()
     {
+        if ($this->_tmpfile && is_file($this->_tmpfile)) {
+            unlink($this->_tmpfile);
+        }
         $tmpDir = sys_get_temp_dir();
         $this->_tmpfile = tempnam($tmpDir, 'cronman');
 
@@ -142,6 +155,8 @@ class CrontabManager
         } else {
             if (!isset($this->files[$file])) {
                 $this->files[$file] = array();
+                $hash = $this->_shortHash($file);
+                $this->fileHashes[$file] = $hash;
             }
             $this->files[$file][] = $job;
         }
@@ -194,6 +209,7 @@ class CrontabManager
                 if (preg_match('/^\s*\#/', $line)) {
                     $this->_comments[] = $line;
                 } elseif (trim($line) == '') {
+                    $this->_comments = array();
                     continue;
                 } else {
                     $msg = sprintf('Line #%d of file: "%s" is invalid!', $lineno, $path);
@@ -223,7 +239,7 @@ class CrontabManager
                 )
             );
         }
-        $hash = base_convert(crc32($path), 10, 36);
+        $hash = $this->_shortHash($path);
 
         if (isset($this->filesToRemove[$hash])) {
             unset($this->filesToRemove[$hash]);
@@ -256,7 +272,7 @@ class CrontabManager
                 )
             );
         }
-        $hash = base_convert(crc32($path), 10, 36);
+        $hash = $this->_shortHash($path);
         if (isset($this->fileHashes[$path])) {
             unset($this->fileHashes[$path]);
             unset($this->files[$path]);
@@ -264,6 +280,18 @@ class CrontabManager
         $this->filesToRemove[$hash] = $path;
 
         return $this;
+    }
+
+    /**
+     * Calculates short hash of string
+     *
+     * @param string $input
+     * @return string
+     */
+    private function _shortHash($input)
+    {
+        $hash = base_convert(crc32($input), 10, 36);
+        return $hash;
     }
 
     /**
@@ -316,7 +344,6 @@ class CrontabManager
         file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
         $out = $this->_exec($this->crontab . ' ' .
             $this->_tmpfile . ' 2>&1', $ret);
-        unlink($this->_tmpfile);
         $this->_setTempFile();
         if ($ret != 0) {
             throw new \UnexpectedValueException(
@@ -382,7 +409,8 @@ class CrontabManager
     private function _doReplace(array $contents)
     {
         $out = join("\n", $contents);
-        foreach ($this->replace as $fromJob => $toTob) {
+        foreach ($this->replace as $entry) {
+            list($fromJob, $toTob) = $entry;
             /* @var $fromJob CronEntry */
             /* @var $toTob CronEntry */
             $from = $fromJob->render(false);
@@ -473,11 +501,27 @@ class CrontabManager
      */
     public function listJobs()
     {
-        $out = $this->_exec($this->_command() . ' -l;', $retVal);
+        $out = $this->_exec($this->_command() . ' -l', $retVal);
         if ($retVal != 0) {
             throw new \UnexpectedValueException('No cron file or no permissions to list', $retVal);
         }
         return $out;
+    }
+
+    /**
+     * Cleans an instance without saving to disk
+     *
+     * @return CrontabManager
+     */
+    public function cleanManager()
+    {
+        $this->fileHashes = array();
+        $this->jobs = array();
+        $this->files = array();
+        $this->replace = array();
+        $this->filesToRemove = array();
+
+        return $this;
     }
 }
 
