@@ -47,3 +47,6 @@ $crontab->disable('/tmp/toremove.txt');
 $crontab->save();
 ```
 
+You can also use the built-in tools from the console: cronman located in the
+directory `bin/` for ex.:
+    bin/cronman --enable project-cronfile --user www-data
