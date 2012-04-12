@@ -506,7 +506,7 @@ class CrontabManager
     private function _exec($command, & $returnVal)
     {
         ob_start();
-        passthru($command, $returnVal);
+        system($command, $returnVal);
         $output = ob_get_clean();
         return $output;
     }

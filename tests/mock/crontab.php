@@ -7,10 +7,10 @@
  */
 
 $target = $_SERVER['argv'][1];
-if (substr($_SERVER['argv'][2], 0, 1) == '-') {
+$first = $_SERVER['argv'][2];
+if (substr($first, 0, 1) == '-') {
     // opts
-    $opt = $_SERVER['argv'][2];
-    if ($opt == '-l') {
+    if ($first == '-l') {
         if (!is_readable($target)) {
             fprintf(STDERR, 'Target is not readable'."\n");
             exit(1);
@@ -23,7 +23,7 @@ if (substr($_SERVER['argv'][2], 0, 1) == '-') {
         fprintf(STDOUT, $content);
         exit(0);
     }
-    if ($opt == '-r') {
+    if ($first == '-r') {
         file_put_contents($target, '');
         exit(0);
     }

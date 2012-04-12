@@ -18,13 +18,27 @@ class MockCrontabManager extends CrontabManager
     /**
      * @var resource
      */
-    private $mockcron;
+    public $mockcron;
+
+    /**
+     * @var string
+     */
+    public $mockcronname;
     
     public function __construct()
     {
         parent::__construct();
         
-        $this->mockcron = tmpfile();
+        $this->mockcronname = tempnam(sys_get_temp_dir(), 'php-mcm');
+        chmod($this->mockcronname, 0666);
+    }
+
+    public function __destruct()
+    {
+        if (is_file($this->mockcronname)) {
+            unlink($this->mockcronname);
+        }
+        parent::__destruct();
     }
     
     /**
@@ -46,35 +60,29 @@ class MockCrontabManager extends CrontabManager
      */
     protected function _writeContents($contents)
     {
+        $this->mockcron = fopen($this->mockcronname, 'r+');
         ftruncate($this->mockcron, 0);
         rewind($this->mockcron);
         fwrite($this->mockcron, $contents);
         fflush($this->mockcron);
         rewind($this->mockcron);
+        fclose($this->mockcron);
         $this->_setTempFile();
         return $this;
     }
-    
-    /**
-     * (non-PHPdoc)
-     * @see php\manager\crontab.CrontabManager::_replaceCronContents()
-     */
-    protected function _replaceCronContents()
+
+    protected function _command()
     {
-        return $this->_writeContents($this->cronContent);
+        $cmd = parent::_command();
+        $cmd .= ' ' . $this->mockcronname;
+        return $cmd;
     }
-    
+
     /**
-     * (non-PHPdoc)
-     * @see php\manager\crontab.CrontabManager::listJobs()
+     * @return string
      */
-    public function listJobs()
+    public function __mock_command()
     {
-        rewind($this->mockcron);
-        $buff = '';
-        while (!feof($this->mockcron)) {
-            $buff .= fread($this->mockcron, 1024);
-        }
-        return $buff;
+        return parent::_command();
     }
 }

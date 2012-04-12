@@ -13,7 +13,7 @@ require_once dirname(__DIR__) . '/src/CronEntry.php';
 class CrontabManagerTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var \php\manager\crontab\CrontabManager
+     * @var \tests\php\manager\crontab\mock\MockCrontabManager
      */
     protected $object;
 
@@ -28,8 +28,13 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
         $manager = new MockCrontabManager();
         $manager->setInitialContents($content);
         $manager->crontab = 'php ' . __DIR__ . '/mock/crontab.php';
-        $manager->user = `whoami`;
-        $this->object = $manager; 
+        $manager->user = null;
+        $this->object = $manager;
+    }
+
+    protected function tearDown()
+    {
+        unset($this->object);
     }
 
     public function testNewJob()
@@ -248,5 +253,39 @@ class CrontabManagerTest extends \PHPUnit_Framework_TestCase
         $initial = '*	*	*	*	*	w > /tmp/sysload';
         $this->assertContains($initial, $saved);
         $this->assertContains($initial, $before);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testEnableOrUpdateInvalid()
+    {
+        $this->object->enableOrUpdate(__DIR__ . '/not-existent-file.oo');
+    }
+
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testDisableInvalid()
+    {
+        $this->object->disable(__DIR__ . '/not-existent-file.oo');
+    }
+
+    public function test_command()
+    {
+        $this->object->user = null;
+        $this->object->crontab = '/usr/bin/crontab';
+
+        $expected = '/usr/bin/crontab';
+        $actual = $this->object->__mock_command();
+
+        $this->assertEquals($expected, $actual);
+
+        $this->object->user = 'some-user';
+        $expected = 'sudo -u some-user /usr/bin/crontab';
+        $actual = $this->object->__mock_command();
+
+        $this->assertEquals($expected, $actual);
     }
 }

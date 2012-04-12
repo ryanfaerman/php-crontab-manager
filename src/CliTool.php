@@ -51,12 +51,12 @@ class CliTool
     /**
      * @var string|null
      */
-    private $_sudo = null;
+    protected $_sudo = null;
 
     /**
      * @var string
      */
-    private $_targetFile;
+    protected $_targetFile;
 
     /**
      * Constructor
@@ -175,12 +175,12 @@ class CliTool
     /**
      * Runs tool from CLI
      *
-     * @return void
+     * @return integer
      * @static
      */
     public static function run()
     {
-        $cli = new self();
+        $cli = self::_instantinate();
         try {
             $cli->_parseOpts();
             $method = $cli->_dispach();
@@ -191,16 +191,16 @@ class CliTool
         } catch (\UnexpectedValueException $optExc) {
             $cli->_err("Invalid option: " . $optExc->getMessage() . "\n");
             $cli->_err($cli->usage());
-            exit(1);
+            return 1;
         } catch (\Exception $exc) {
             if ($cli->_verbose) {
                 $cli->_err($exc . "\n");
             } else {
                 $cli->_err("Error: " . $exc->getMessage() . "\n");
             }
-            exit(2);
+            return 2;
         }
-        exit(0);
+        return 0;
     }
 
     /**
@@ -208,7 +208,7 @@ class CliTool
      *
      * @param string $message
      */
-    private function _out($message)
+    protected function _out($message)
     {
         fprintf(STDOUT, $message . "\n");
     }
@@ -218,9 +218,29 @@ class CliTool
      *
      * @param string $message
      */
-    private function _err($message)
+    protected function _err($message)
     {
         fprintf(STDERR, $message . "\n");
+    }
+
+    /**
+     * CrontabManager factory method
+     *
+     * @return CrontabManager
+     */
+    protected function _createManager()
+    {
+        return new CrontabManager();
+    }
+
+    /**
+     * CliTool factory method
+     *
+     * @return CliTool
+     */
+    protected static function _instantinate()
+    {
+        return new self();
     }
 
     /**
@@ -229,7 +249,7 @@ class CliTool
     public function enable()
     {
         $this->_loadClasses();
-        $manager = new CrontabManager();
+        $manager = $this->_createManager();
         if ($this->_sudo) {
             $manager->user = $this->_sudo;
             $this->_out(sprintf('Using "%s" user\'s crontab with `sudo\' command', $this->_sudo));
@@ -246,7 +266,7 @@ class CliTool
     public function disable()
     {
         $this->_loadClasses();
-        $manager = new CrontabManager();
+        $manager = $this->_createManager();
         if ($this->_sudo) {
             $manager->user = $this->_sudo;
             $this->_out(sprintf('Using "%s" crontab with `sudo\' command', $this->_sudo));
@@ -291,9 +311,10 @@ class CliTool
             require_once __DIR__ . '/CronEntry.php';
         }
     }
+
 }
 
 if (PHP_SAPI == 'cli' && isset($_SERVER['argv'])
     && realpath($_SERVER['argv'][0]) == __FILE__) {
-    CliTool::run();
+    exit(CliTool::run());
 }
