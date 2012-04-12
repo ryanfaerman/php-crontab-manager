@@ -22,7 +22,7 @@ entry into end of suroers file (visudo) for ex.:
 
     %developers ALL=(www-data)NOPASSWD:/usr/bin/crontab
 
-Above meens that users in group sudoers can run program `crontab` as user
+Above meens that users in group `developers` can run program `crontab` as user
 `www-data` without password
 
 Usage
