@@ -123,6 +123,7 @@ class CrontabManager
         }
         $tmpDir = sys_get_temp_dir();
         $this->_tmpfile = tempnam($tmpDir, 'cronman');
+        chmod($this->_tmpfile, 0666);
 
         return $this;
     }
@@ -361,7 +362,7 @@ class CrontabManager
     protected function _replaceCronContents()
     {
         file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
-        $out = $this->_exec($this->crontab . ' ' .
+        $out = $this->_exec($this->_command() . ' ' .
             $this->_tmpfile . ' 2>&1', $ret);
         $this->_setTempFile();
         if ($ret != 0) {

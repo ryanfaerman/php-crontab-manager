@@ -14,6 +14,17 @@ Installation
 * include files from src directory or use some autoloader
 * use it as described below
 
+Requirements
+------------
+
+If you are willing to use this tool as other user be sure enable appropriate
+entry into end of suroers file (visudo) for ex.:
+
+    %developers ALL=(www-data)NOPASSWD:/usr/bin/crontab
+
+Above meens that users in group sudoers can run program `crontab` as user
+`www-data` without password
+
 Usage
 -----
 

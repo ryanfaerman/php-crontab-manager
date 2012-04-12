@@ -89,12 +89,12 @@ class CliTool
         $longOpts = array(
             'enable:',
             'disable:',
-            'user::',
+            'user:',
             'help',
             'usage',
             'verbose'
         );
-        $opts = getopt('e:d:hvu::', $longOpts);
+        $opts = getopt('e:d:hvu:', $longOpts);
         $this->_opts = $opts;
         $this->_verbose = $this->_isSet('verbose', 'v');
         if ($this->_isSet('usage') || $this->_isSet('help', 'h')) {
@@ -232,12 +232,12 @@ class CliTool
         $manager = new CrontabManager();
         if ($this->_sudo) {
             $manager->user = $this->_sudo;
-            $this->_out(sprintf('Using "%s" crontab with `sudo\' command"', $this->_sudo));
+            $this->_out(sprintf('Using "%s" user\'s crontab with `sudo\' command', $this->_sudo));
         }
         $manager->enableOrUpdate($this->_targetFile);
         $manager->save();
 
-        $this->_out(sprintf('File "%s" merged into crontab"', $this->_targetFile));
+        $this->_out(sprintf('File "%s" merged into crontab', $this->_targetFile));
     }
 
     /**
@@ -249,12 +249,12 @@ class CliTool
         $manager = new CrontabManager();
         if ($this->_sudo) {
             $manager->user = $this->_sudo;
-            $this->_out(sprintf('Using "%s" crontab with `sudo\' command"', $this->_sudo));
+            $this->_out(sprintf('Using "%s" crontab with `sudo\' command', $this->_sudo));
         }
         $manager->disable($this->_targetFile);
         $manager->save();
 
-        $this->_out(sprintf('File "%s" removed from crontab"', $this->_targetFile));
+        $this->_out(sprintf('File "%s" removed from crontab', $this->_targetFile));
     }
 
     /**
