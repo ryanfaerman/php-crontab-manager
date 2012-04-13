@@ -3,9 +3,10 @@ PHP Crontab Manager
 
 Last build status: [![Build Status](https://secure.travis-ci.org/MediovskiTechnology/php-crontab-manager.png?branch=master)](http://travis-ci.org/MediovskiTechnology/php-crontab-manager)
 
-Manages crontab file by adding and deleting the appropriate entries. It is able
-to track the source file so that after the changes in this file to upgrade a 
-crontab file to the target.
+Manages linux crontab file by adding and deleting the appropriate entries. It is
+able to track the source file so that after the changes to this file, he will
+be able to enter and update the user's crontab file in safe way (doesn't remove
+entries added by user using `crontab -e`).
 
 Installation
 ------------
@@ -18,12 +19,12 @@ Requirements
 ------------
 
 If you are willing to use this tool as other user be sure enable appropriate
-entry into end of suroers file (visudo) for ex.:
+entry into end of sudoers file (`visudo`) for ex.:
 
     %developers ALL=(www-data)NOPASSWD:/usr/bin/crontab
 
-Above meens that users in group `developers` can run program `crontab` as user
-`www-data` without password
+Above means that users in a group `developers` can run program `crontab` as user
+`www-data` without need to enter the password.
 
 Usage
 -----
@@ -58,7 +59,7 @@ $crontab->disable('/tmp/toremove.txt');
 $crontab->save();
 ```
 
-You can also use the built-in tools from the console: cronman located in the
+You can also use the built-in tools from the console: `cronman` located in the
 directory `bin/` for ex.:
 
     bin/cronman --enable /var/www/myproject/.cronfile --user www-data
