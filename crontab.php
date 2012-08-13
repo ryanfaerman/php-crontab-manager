@@ -123,7 +123,7 @@ class Crontab {
 	* @param string $minute required
 	* @return object
 	*/
-	function onDayOfWeek($day) {
+	function onDayOfWeek($dayOfWeek) {
 		$this->dayOfWeek = $dayOfWeek;
 		return $this;
 	}
