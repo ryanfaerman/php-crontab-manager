@@ -189,7 +189,7 @@ class Crontab {
 	* @return string
 	*/
 	function listJobs() {
-		return exec($this->crontab.' -l;');
+		return shell_exec($this->crontab.' -l;');
 	}
 }
 
