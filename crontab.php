@@ -70,11 +70,7 @@ class Crontab {
          */
         var $dayOfWeek = '*';
         
-		  /**
-         * Year 1970–2099
-         * @var string
-         */
-	var $year = null;
+
         /**
          * @var array
          */
@@ -143,15 +139,6 @@ class Crontab {
                 return $this;
         }
 		
-	/**
-        * Set Year
-        * @param string $year required
-        * @return object
-        */
-        function onYear($year) {
-                $this->year = $year;
-                return $this;
-        }
         
         /**
         * Set entire time code with one function. This has to be a complete entry. See http://en.wikipedia.org/wiki/Cron#crontab_syntax
@@ -164,8 +151,7 @@ class Crontab {
                         $this->hour, 
                         $this->dayOfMonth, 
                         $this->month, 
-                        $this->dayOfWeek,
-			$this->year
+                        $this->dayOfWeek
                 ) = explode(' ', $timeCode);
                 
                 return $this;
@@ -177,13 +163,11 @@ class Crontab {
         * @return object
         */
         function doJob($job) {
-		$year = !is_null($this->year) ? ' '.$this->year : '';
                 $this->jobs[] =        $this->minute.' '.
                                                 $this->hour.' '.
                                                 $this->dayOfMonth.' '.
                                                 $this->month.' '.
-                                                $this->dayOfWeek.
-						$year."\t".								
+                                                $this->dayOfWeek."\t".								
                                                 $job;
                 
                 return $this;
