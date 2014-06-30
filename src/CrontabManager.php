@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author   Ryan Faerman <ryan.faerman@gmail.com>
  * @author   Krzysztof Suszyński <k.suszynski@mediovski.pl>
@@ -35,8 +36,7 @@ namespace php\manager\crontab;
  * @author Krzysztof Suszyński <k.suszynski@mediovski.pl>
  * @author Ryan Faerman <ryan.faerman@gmail.com>
  */
-class CrontabManager
-{
+class CrontabManager {
 
     /**
      * Location of the crontab executable
@@ -44,7 +44,6 @@ class CrontabManager
      * @var string
      */
     public $crontab = '/usr/bin/crontab';
-
     public $cronContent = '';
 
     /**
@@ -96,16 +95,14 @@ class CrontabManager
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->_setTempFile();
     }
 
     /**
      * Destrutor
      */
-    public function __destruct()
-    {
+    public function __destruct() {
         if ($this->_tmpfile && is_file($this->_tmpfile)) {
             unlink($this->_tmpfile);
         }
@@ -116,8 +113,7 @@ class CrontabManager
      *
      * @return CrontabManager
      */
-    protected function _setTempFile()
-    {
+    protected function _setTempFile() {
         if ($this->_tmpfile && is_file($this->_tmpfile)) {
             unlink($this->_tmpfile);
         }
@@ -136,8 +132,7 @@ class CrontabManager
      *
      * @return CronEntry
      */
-    public function newJob($jobSpec = null, $group = null)
-    {
+    public function newJob($jobSpec = null, $group = null) {
         return new CronEntry($jobSpec, $this, $group);
     }
 
@@ -149,8 +144,7 @@ class CrontabManager
      *
      * @return CrontabManager
      */
-    public function add(CronEntry $job, $file = null)
-    {
+    public function add(CronEntry $job, $file = null) {
         if (!$file) {
             $this->jobs[] = $job;
         } else {
@@ -172,8 +166,7 @@ class CrontabManager
      *
      * @return CrontabManager
      */
-    public function replace(CronEntry $from, CronEntry $to)
-    {
+    public function replace(CronEntry $from, CronEntry $to) {
         $this->replace[] = array($from, $to);
         return $this;
     }
@@ -192,8 +185,7 @@ class CrontabManager
      * @return CronEntry[]
      * @throws \InvalidArgumentException
      */
-    private function _parseFile($path, $hash)
-    {
+    private function _parseFile($path, $hash) {
         $jobs = array();
 
         $lines = file($path);
@@ -229,15 +221,13 @@ class CrontabManager
      * @returns CrontabManager
      * @throws \InvalidArgumentException
      */
-    public function enableOrUpdate($filename)
-    {
+    public function enableOrUpdate($filename) {
         $path = realpath($filename);
         if (!$path || !is_readable($path)) {
             throw new \InvalidArgumentException(
-                sprintf(
-                    '"%s" don\'t exists or isn\'t readable',
-                    $filename
-                )
+            sprintf(
+                    '"%s" don\'t exists or isn\'t readable', $filename
+            )
             );
         }
         $hash = $this->_shortHash($path);
@@ -262,15 +252,13 @@ class CrontabManager
      * @return CrontabManager
      * @throws \InvalidArgumentException
      */
-    public function disable($filename)
-    {
+    public function disable($filename) {
         $path = realpath($filename);
         if (!$path || !is_readable($path)) {
             throw new \InvalidArgumentException(
-                sprintf(
-                    '"%s" don\'t exists or isn\'t readable',
-                    $filename
-                )
+            sprintf(
+                    '"%s" don\'t exists or isn\'t readable', $filename
+            )
             );
         }
         $hash = $this->_shortHash($path);
@@ -289,10 +277,9 @@ class CrontabManager
      * @param string $input
      * @return string
      */
-    private function _shortHash($input)
-    {
+    private function _shortHash($input) {
         $hash = base_convert(
-            $this->_signedInt(crc32($input)), 10, 36
+                $this->_signedInt(crc32($input)), 10, 36
         );
         return $hash;
     }
@@ -303,8 +290,7 @@ class CrontabManager
      * @param integer $in
      * @return integer
      */
-    private static function _signedInt($in)
-    {
+    private static function _signedInt($in) {
         $int_max = 2147483647; // pow(2, 31) - 1
         if ($in > $int_max) {
             $out = $in - $int_max * 2 - 2;
@@ -319,8 +305,7 @@ class CrontabManager
      *
      * @return string
      */
-    protected function _command()
-    {
+    protected function _command() {
         $cmd = '';
         if ($this->user) {
             $cmd .= sprintf('sudo -u %s ', $this->user);
@@ -328,7 +313,6 @@ class CrontabManager
         $cmd .= $this->crontab;
         return $cmd;
     }
-
 
     /**
      * Save the jobs to disk, remove existing cron
@@ -338,13 +322,13 @@ class CrontabManager
      * @return boolean
      * @throws \UnexpectedValueException
      */
-    public function save($includeOldJobs = true)
-    {
+    public function save($includeOldJobs = true) {
         $this->cronContent = '';
         if ($includeOldJobs) {
             try {
                 $this->cronContent = $this->listJobs();
             } catch (\UnexpectedValueException $e) {
+
             }
         }
 
@@ -359,15 +343,14 @@ class CrontabManager
      * @throws \UnexpectedValueException
      * @return CrontabManager
      */
-    protected function _replaceCronContents()
-    {
+    protected function _replaceCronContents() {
         file_put_contents($this->_tmpfile, $this->cronContent, LOCK_EX);
         $out = $this->_exec($this->_command() . ' ' .
-            $this->_tmpfile . ' 2>&1', $ret);
+                $this->_tmpfile . ' 2>&1', $ret);
         $this->_setTempFile();
         if ($ret != 0) {
             throw new \UnexpectedValueException(
-                $out . "\n" . $this->cronContent, $ret
+            $out . "\n" . $this->cronContent, $ret
             );
         }
         return $this;
@@ -377,14 +360,17 @@ class CrontabManager
      * @var string
      */
     private $_beginBlock = 'BEGIN:%s';
+
     /**
      * @var string
      */
     private $_endBlock = 'END:%s';
+
     /**
      * @var string
      */
     private $_before = "Autogenerated by CrontabManager.\n# Do not edit. Orginal file: %s";
+
     /**
      * @var string
      */
@@ -395,8 +381,7 @@ class CrontabManager
      *
      * @return string
      */
-    private function _prepareContents($contents)
-    {
+    private function _prepareContents($contents) {
         if (empty($contents)) {
             $contents = array();
         } else {
@@ -426,8 +411,7 @@ class CrontabManager
      *
      * @return string
      */
-    private function _doReplace(array $contents)
-    {
+    private function _doReplace(array $contents) {
         $out = join("\n", $contents);
         foreach ($this->replace as $entry) {
             list($fromJob, $toTob) = $entry;
@@ -445,8 +429,7 @@ class CrontabManager
      *
      * @return array
      */
-    private function _addBlock(array $contents, $file, $hash)
-    {
+    private function _addBlock(array $contents, $file, $hash) {
         $pre = sprintf('# ' . $this->_beginBlock, $hash);
         $pre .= sprintf(' ' . $this->_before, $file);
         $contents[] = $pre;
@@ -472,8 +455,7 @@ class CrontabManager
      *
      * @return array
      */
-    private function _removeBlock(array $contents, $hash)
-    {
+    private function _removeBlock(array $contents, $hash) {
         $from = sprintf('# ' . $this->_beginBlock, $hash);
         $to = sprintf('# ' . $this->_endBlock, $hash);
         $cut = false;
@@ -503,8 +485,7 @@ class CrontabManager
      *
      * @return string
      */
-    private function _exec($command, & $returnVal)
-    {
+    private function _exec($command, & $returnVal) {
         ob_start();
         system($command, $returnVal);
         $output = ob_get_clean();
@@ -517,8 +498,7 @@ class CrontabManager
      * @return string
      * @throws \UnexpectedValueException
      */
-    public function listJobs()
-    {
+    public function listJobs() {
         $out = $this->_exec($this->_command() . ' -l', $retVal);
         if ($retVal != 0) {
             throw new \UnexpectedValueException('No cron file or no permissions to list', $retVal);
@@ -531,8 +511,7 @@ class CrontabManager
      *
      * @return CrontabManager
      */
-    public function cleanManager()
-    {
+    public function cleanManager() {
         $this->fileHashes = array();
         $this->jobs = array();
         $this->files = array();
@@ -541,5 +520,42 @@ class CrontabManager
 
         return $this;
     }
-}
 
+    /**
+     * Delete one job from current jobs.
+     * <p>
+     * Exemple of use:
+     * </p>
+     * <pre>
+     * $crontab = new CrontabManager();
+     * $crontab->deleteJob("ms8xjs");
+     * $crontab->save(false);
+     * </pre>
+     *
+     * @param string $job id of the job you wanna delete
+     * @return int number of jobs deleted
+     */
+    function deleteJob($job = null) {
+        $jobsDeleted = 0;
+        if (!is_null($job)) {
+            $data = array();
+            $oldJobs = explode("\n", $this->listJobs()); // get the old jobs
+            if (is_array($oldJobs)) {
+                foreach ($oldJobs as $oldJob) {
+                    if ($oldJob != '') {
+                        if (!preg_match('/' . $job . '/', $oldJob)) {
+                            $newJob = new CronEntry($oldJob, $this);
+                            $newJob->lineComment = '';
+                            $data[] = $newJob;
+                        } else {
+                            $jobsDeleted++;
+                        }
+                    }
+                }
+            }
+            $this->jobs = $data;
+        }
+        return $jobsDeleted;
+    }
+
+}
