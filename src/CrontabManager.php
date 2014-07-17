@@ -532,7 +532,7 @@ class CrontabManager {
      * $crontab->save(false);
      * </pre>
      *
-     * @param string $job id of the job you wanna delete
+     * @param string $job id or part of description of the job you wanna delete
      * @return int number of jobs deleted
      */
     function deleteJob($job = null) {
@@ -565,7 +565,7 @@ class CrontabManager {
      * </p>
      * <pre>
      * $crontab = new CrontabManager();
-     * $result = $crontab->existsJob("* * * * * /path/to/job");
+     * $result = $crontab->jobExists("* * * * * /path/to/job");
      * </pre>
      *
      * @param string $job id or part of description of the job you wanna verify if exists or not
@@ -573,9 +573,9 @@ class CrontabManager {
      */
     function jobExists($job = null) {
         if (!is_null($job)) {
-            $Jobs = explode("\n", $this->listJobs()); // get the old jobs
-            if (is_array($Jobs)) {
-                foreach ($Jobs as $oneJob) {
+            $jobs = explode("\n", $this->listJobs()); // get the old jobs
+            if (is_array($jobs)) {
+                foreach ($jobs as $oneJob) {
                     if ($oneJob != '') {
                         if (preg_match('/' . $job . '/', $oneJob)) {
                            return true;
