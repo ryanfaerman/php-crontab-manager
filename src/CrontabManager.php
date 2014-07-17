@@ -558,4 +558,33 @@ class CrontabManager {
         return $jobsDeleted;
     }
 
+    /**
+     * Verify if a job exists or not.
+     * <p>
+     * Exemple of uses:
+     * </p>
+     * <pre>
+     * $crontab = new CrontabManager();
+     * $result = $crontab->existsJob("* * * * * /path/to/job");
+     * </pre>
+     *
+     * @param string $job id or part of description of the job you wanna verify if exists or not
+     * @return boolean [true|false] true if exists. false if not exists
+     */
+    function jobExists($job = null) {
+        if (!is_null($job)) {
+            $Jobs = explode("\n", $this->listJobs()); // get the old jobs
+            if (is_array($Jobs)) {
+                foreach ($Jobs as $oneJob) {
+                    if ($oneJob != '') {
+                        if (preg_match('/' . $job . '/', $oneJob)) {
+                           return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
 }
