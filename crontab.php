@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * @author Ryan Faerman <ryan.faerman@gmail.com>
  * @version 0.1
